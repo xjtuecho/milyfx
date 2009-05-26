@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2008 by echo<echo.xjtu@gmail.com>
+ *  Copyright (C) 2008 by Echo <echo.xjtu@gmail.com>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,24 +17,32 @@
  *  59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+/**
+ * The source code encoding is GBK
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdarg.h>
 #include <string.h>
+
 #ifdef _WIN32
 #include <conio.h>	/*int getch()*/
 #else	/*Linux*/
-#include <termios.h>	
+#include <termios.h>
 #include <unistd.h>
 #include <iconv.h>
 #endif
+
 #include "libfetion.h"
 #include "datastruct.h"
+#include "event.h"
 #include "mygetopt.h"
 #include "utf8.h"
+
 #define FX_PACKAGE	"MilyFX"
-#define FX_VERSION	"0.0.1"
+#define FX_VERSION	"0.0.2"
+
 #ifdef _MSC_VER
 #define strdup _strdup
 #define snprintf _snprintf
@@ -46,9 +54,9 @@
 #define BUF_LEN	16
 #define TEXT_LEN	512
 
-enum { 
-	CHARSET_UTF8, 
-	CHARSET_GBK 
+enum {
+	CHARSET_UTF8,
+	CHARSET_GBK
 }	g_charset = CHARSET_UTF8;
 
 enum {
@@ -59,9 +67,9 @@ enum {
 	STATUS_DEREGISTERED
 }	g_status = STATUS_OFFLINE;
 
-typedef struct { 
-	long id; 
-	const char *name; 
+typedef struct {
+	long id;
+	const char *name;
 }	index_item_t;
 
 index_item_t *g_current=NULL;
@@ -79,7 +87,7 @@ char g_text[TEXT_LEN]={0};
 PROXY_ITEM g_proxy = {"211.136.85.130", "3128", "", "", PROXY_HTTP};
 
 const char *g_cmd_array[] = {
-	"quit","exit","bye","ls","!", "cd", "state","self","block", 
+	"quit","exit","bye","ls","!", "cd", "state","self","block",
 	"help","info","send","sms","chcp","about","log","impresa","debug"
 };
 
@@ -88,7 +96,8 @@ void usage(void);
 int parse_input(char *input, char **arg1, char **arg2, char **arg3);
 int is_a_cmd(const char *s);
 int translate(char *buf);
-void prints(const char *fmt,...);
+void print_utf8(const char *fmt,...);
+void print_gbk(const char *fmt,...);
 void log_message(const char *fmt,...);
 void helpinfo(const char *cmd);
 int main_loop(void);
@@ -96,7 +105,7 @@ int non_interactive(void);
 const char *get_state_string(int state);
 const char *get_usr_type_string(int usr_type);
 int util_getch(void);
-int util_get_password(char* pwd, int len); 
+int util_get_password(char* pwd, int len);
 void util_debug(char* info, ...);
 char *util_filter_msg(const char *msg);
 void index_release(DList *list);
@@ -127,7 +136,7 @@ void on_sys_message(Sint64 id);
 void show_message(Sint64 id);
 void on_set_state_ok(int state);
 void on_sys_err_network(int err);
-void on_sys_dialog_message(int message,int fx_msg,Sint64 who);
+void on_sys_dialog_message(int message, Fetion_MSG* fx_msg,Sint64 who);
 
 //void cb_cmd_state(int message, WPARAM wParam, LPARAM lParam, void* args);
 void cb_system_msg(int message, WPARAM wParam, LPARAM lParam, void* args);
@@ -141,7 +150,7 @@ int main(int argc, char **argv)
 	int ret = 0;
 	init_options(argc,argv);
 
-	if(!fx_init()) 
+	if(!fx_init())
 	{
 		fprintf(stderr,"fx_init() error\n");
 		exit(-1);
@@ -151,24 +160,24 @@ int main(int argc, char **argv)
 		fx_set_login_status(FX_STATUS_OFFLINE);
 	else
 		fx_set_login_status(FX_STATUS_ONLINE);
-	
+
 	if(g_text[0])
-		ret = non_interactive();	
-	else 
+		ret = non_interactive();
+	else
 		ret = main_loop();
 
-	prints("logout now...\n");
+	print_utf8("logout now...\n");
 	fx_loginout();
-	prints("release resource now...\n");
+	print_utf8("release resource now...\n");
 	fx_terminate();
-	return ret;	
+	return ret;
 }
 
 
 int non_interactive(void)
 {
-	if(!translate(g_text))					   
-		fprintf(stderr,"translate() error\n");	
+	if(!translate(g_text))
+		fprintf(stderr,"translate() error\n");
 
 	if(!fs_login(g_user,g_passwd))
 	{
@@ -176,15 +185,15 @@ int non_interactive(void)
 		return -1;
 	}
 
-	if(g_who[0]) 
+	if(g_who[0])
 	{
 		fx_send_sms(atol(g_who), g_text, NULL, NULL);
-		prints("send SMS to %s\nSMS content:%s\n",g_who,g_text);
-	} 
-	else 
+		print_utf8("send SMS to %s\nSMS content:%s\n",g_who,g_text);
+	}
+	else
 	{
 		fx_send_sms_to_self(g_text, NULL, NULL);
-		prints("send SMS to myself\nSMS content:%s\n",g_text);
+		print_utf8("send SMS to myself\nSMS content:%s\n",g_text);
 	}
 	return 0;
 }
@@ -195,48 +204,48 @@ int main_loop(void)
 	int args=0;
 	char input_buf[TEXT_LEN] = {0};
 	char *arg1=NULL,*arg2=NULL,*arg3=NULL;
-	
+
 	g_status = STATUS_LOGIN;
 	fx_login(g_user, g_passwd, cb_fx_login, NULL);
-	
+
 	while(g_status != STATUS_DEREGISTERED && g_status != STATUS_OFFLINE)
 	{
-		if(g_current) 
+		if(g_current)
 		{
 			if(g_current->name)
-				prints(g_current->name);
+				print_utf8(g_current->name);
 			else
-				prints("%ld", g_current->id);
+				print_utf8("%ld", g_current->id);
 		}
 
-		prints(">");
+		print_utf8(">");
 
 		memset(input_buf, 0, TEXT_LEN);
-		
+
 		if(!fgets(input_buf, TEXT_LEN,stdin))
 			fprintf(stderr, "fgets() error\n");
-		if(!translate(input_buf))					   
+		if(!translate(input_buf))
 			fprintf(stderr, "translate() error\n");
-		
+
 		strncpy(g_text, input_buf, TEXT_LEN);
-		
+
 		args = parse_input(g_text, &arg1, &arg2, &arg3);
 
-		if(0 == args) 
+		if(0 == args)
 			continue;
 		else if('!' == arg1[0]) {
 			on_out_cmd(input_buf);
 			continue;
-		}   
+		}
 		else if(is_a_cmd(arg1)) {
-			if(strequ("about",arg1)) 
-				prints(FX_PACKAGE" "FX_VERSION"  Author: echo <echo.xjtu@gmail.com> http://echoxjtu.cublog.cn\n");
+			if(strequ("about",arg1))
+				print_utf8(FX_PACKAGE" "FX_VERSION"  Author: Echo <echo.xjtu@gmail.com> http://echoxjtu.cublog.cn\n");
 			else if(strequ("ls", arg1)) {
 				if(1==args)
 					on_cmd_ls("");
-				else if(2==args) 
+				else if(2==args)
 					on_cmd_ls(arg2);
-				else 
+				else
 					helpinfo("ls");
 			}
 			else if(strequ("info", arg1)) {
@@ -246,57 +255,58 @@ int main_loop(void)
 					helpinfo("info");
 			}
 			else if(strequ("state", arg1)) {
-				if(1 == args) 
-					prints("å½“å‰çŠ¶æ€: %s\n", get_state_string( fx_get_user_state() ));
-				else if (2 == args) 
-					on_cmd_state(arg2); 
-				else 
+				if(1 == args) {
+					print_gbk("µ±Ç°×´Ì¬: %s\n", 
+						get_state_string( fx_get_user_state() ));
+				} else if (2 == args)
+					on_cmd_state(arg2);
+				else
 					helpinfo("state");
 			}
 			else if(strequ("log", arg1)) {
 				if(1 == args) {
 					g_is_log = ~g_is_log;
-					if(g_is_log) 
-						prints("keep a chatlog\n");
-					else 
-						prints("do not keep a chatlog\n");
-				} else 
+					if(g_is_log)
+						print_utf8("keep a chatlog\n");
+					else
+						print_utf8("do not keep a chatlog\n");
+				} else
 					helpinfo("log");
 			}
 			else if(strequ("debug", arg1)) {
 				if(1==args){
 					g_is_debug = ~g_is_debug;
-					if(g_is_debug) 
-						prints("run in debug mode\n");
-					else 
-						prints("run in normal mode\n");
+					if(g_is_debug)
+						print_utf8("run in debug mode\n");
+					else
+						print_utf8("run in normal mode\n");
 				}else continue;
 			}
 			else if(strequ("cd",arg1)) {
 				if(2 == args)
 					on_cmd_cd(arg2);
-				else 
+				else
 					helpinfo("cd");
 			}
 			else if(strequ("send",arg1)){
-				if(3 == args) 
+				if(3 == args)
 					on_cmd_send(arg2, arg3);
-				else 
+				else
 					helpinfo("send");
 			}
 			else if(strequ("sms",arg1)){
-				if(3==args) 
+				if(3==args)
 					on_cmd_sms(arg2,arg3);
-				else 
+				else
 					helpinfo("sms");
 			}
 			else if(strequ("chcp",arg1))	{
 				on_cmd_chcp();
 			}
 			else if(strequ("self",arg1)) {
-				if(args>1) 
+				if(args>1) {
 					fx_send_sms_to_self(4+strstr(input_buf,"self"), cb_cmd_self,  NULL);
-				else 
+				} else
 					helpinfo("self");
 			}
 			else if(strequ("help",arg1)) {
@@ -305,16 +315,16 @@ int main_loop(void)
 			else if(strequ("impresa",arg1)) {
 				if(2==args) {
 					if(fx_set_user_impresa(arg2,NULL,NULL))
-						prints("set impresa successfully\n");
+						print_utf8("set impresa successfully\n");
 				}
 				else if(1==args) {
 					if(fx_data_get_PersonalInfo()) {
-						prints(fx_data_get_PersonalInfo()->impresa);
-						prints("\n"); 
+						print_utf8(fx_data_get_PersonalInfo()->impresa);
+						print_utf8("\n");
 					}
 				}
-				else 
-					helpinfo("impresa"); 
+				else
+					helpinfo("impresa");
 			}
 			else if(strequ("quit", arg1) ||strequ("exit", arg1) || strequ("bye", arg1))
 				break;
@@ -323,7 +333,7 @@ int main_loop(void)
 			/*send dialog message to the guy who you are chatting with*/
 			fx_dialog_send(g_current->id, input_buf, NULL, NULL);
 		}
-		else 
+		else
 			continue;
 	}
 	return 0;
@@ -333,63 +343,63 @@ void helpinfo(const char *cmd)
 {
 	int i;
 	if(strequ(cmd,"ls")||strequ(cmd,"list")|| strequ(cmd,"l")) {
-		prints("ls a/q/g/b: æ— å‚æ•°åˆ—å‡ºå½“å‰åœ¨çº¿å¥½å‹åˆ—è¡¨,æœ‰å‚æ•°åˆ—å‡ºå¥½å‹è¯¦ç»†ä¿¡æ¯.\n");
+		print_gbk("ls a/q/g/b: ÎŞ²ÎÊıÁĞ³öµ±Ç°ÔÚÏßºÃÓÑÁĞ±í,ÓĞ²ÎÊıÁĞ³öºÃÓÑÏêÏ¸ĞÅÏ¢.\n");
 	} else if(strequ(cmd,"quit")||strequ(cmd,"exit")) {
-		prints("quit/exit/bye: é€€å‡ºæœ¬ç¨‹åº\n");
+		print_gbk("quit/exit/bye: ÍË³ö±¾³ÌĞò\n");
 	} else if(strequ(cmd,"block")) {
-		prints("block: æ˜¯å¦æ‰“å¼€æ¶ˆæ¯å±è”½åŠŸèƒ½\n");
+		print_gbk("block: ÊÇ·ñ´ò¿ªÏûÏ¢ÆÁ±Î¹¦ÄÜ\n");
 	} else if(strequ(cmd,"state")) {
-		prints("state [1|2|3|4]: 1-åœ¨çº¿ 2-éšèº« 3-å¿™ç¢Œ 4-ç¦»å¼€,æ— å‚æ•°å¯Ÿçœ‹å½“å‰çŠ¶æ€\n");
+		print_gbk("state [1|2|3|4]: 1-ÔÚÏß 2-ÒşÉí 3-Ã¦Âµ 4-Àë¿ª,ÎŞ²ÎÊı²ì¿´µ±Ç°×´Ì¬\n");
 	} else if(strequ(cmd,"send")|| strequ(cmd,"s")) {
-		prints("send <ç¼–å·|ç¾¤å·> <æ¶ˆæ¯>: ç»™å¥½å‹æˆ–è€…ç¾¤å‘é€ä¸€ä¸ªæ¶ˆæ¯\n");
+		print_gbk("send <±àºÅ|ÈººÅ> <ÏûÏ¢>: ¸øºÃÓÑ»òÕßÈº·¢ËÍÒ»¸öÏûÏ¢\n");
 	} else if(strequ(cmd,"sms")) {
-		prints("sms [ç¼–å·|é£ä¿¡å·] <çŸ­ä¿¡å†…å®¹>: ç»™å¥½å‹å‘çŸ­ä¿¡\n");
+		print_gbk("sms [±àºÅ|·ÉĞÅºÅ] <¶ÌĞÅÄÚÈİ>: ¸øºÃÓÑ·¢¶ÌĞÅ\n");
 	} else if(strequ(cmd,"cd")) {
-		prints("cd <å¥½å‹ç¼–å·>: å¼€å§‹å’ŒæŸäººå¯¹è¯, é”®å…¥'cd ..'ç¦»å¼€.\n");
+		print_gbk("cd <ºÃÓÑ±àºÅ>: ¿ªÊ¼ºÍÄ³ÈË¶Ô»°, ¼üÈë'cd ..'Àë¿ª.\n");
 	} else if(strequ(cmd,"!")) {
-		prints("!å¤–éƒ¨å‘½ä»¤: æ‰§è¡Œä¸€ä¸ªå¤–éƒ¨å‘½ä»¤\n");
+		print_gbk("!Íâ²¿ÃüÁî: Ö´ĞĞÒ»¸öÍâ²¿ÃüÁî\n");
 	} else if(strequ(cmd,"chcp")) {
-		prints("chcp: æ”¹å˜å½“å‰å­—ç¬¦é›† (UTF8/GBK)\n");
+		print_gbk("chcp: ¸Ä±äµ±Ç°×Ö·û¼¯ (UTF8/GBK)\n");
 	} else if(strequ(cmd,"self")) {
-		prints("self <çŸ­ä¿¡å†…å®¹>: ç»™è‡ªå·±å‘çŸ­ä¿¡\n");
+		print_gbk("self <¶ÌĞÅÄÚÈİ>: ¸ø×Ô¼º·¢¶ÌĞÅ\n");
 	} else if(strequ(cmd,"log")) {
-		prints("log: æ˜¯å¦ä¿å­˜èŠå¤©è®°å½•\n");
+		print_gbk("log: ÊÇ·ñ±£´æÁÄÌì¼ÇÂ¼\n");
 	} else if(strequ(cmd,"impresa")) {
-		prints("impresa [å¿ƒæƒ…çŸ­è¯­]: å¯Ÿçœ‹/è®¾ç½®å¿ƒæƒ…çŸ­è¯­\n");
+		print_gbk("impresa [ĞÄÇé¶ÌÓï]: ²ì¿´/ÉèÖÃĞÄÇé¶ÌÓï\n");
 	} else if(strequ(cmd,"info")) {
-		prints("info <å¥½å‹ç¼–å·>: å¯Ÿçœ‹å¥½å‹ä¿¡æ¯\n");
+		print_gbk("info <ºÃÓÑ±àºÅ>: ²ì¿´ºÃÓÑĞÅÏ¢\n");
 	} else if(strequ(cmd,"help")) {
-		for(i=0; i<ARRAY_SIZE(g_cmd_array); ++i) 
+		for(i=0; i<ARRAY_SIZE(g_cmd_array); ++i)
 		{
-			prints("%s\t", g_cmd_array[i]);
+			print_gbk("%s\t", g_cmd_array[i]);
 			if(7 == i%8)
 				printf("\n");
 		}
-		prints("\nhelp [å‘½ä»¤]: å¾—åˆ°æŸä¸ªå‘½ä»¤çš„å¸®åŠ©ä¿¡æ¯.\n");
+		print_gbk("\nhelp [ÃüÁî]: µÃµ½Ä³¸öÃüÁîµÄ°ïÖúĞÅÏ¢.\n");
 	} else {
-		prints("æœªçŸ¥å‘½ä»¤\n");
+		print_gbk("Î´ÖªÃüÁî\n");
 	}
 }
 
 
 void on_cmd_chcp(void)
 {
-	if(CHARSET_UTF8==g_charset) 
+	if(CHARSET_UTF8==g_charset)
 	{
 		g_charset=CHARSET_GBK;
-		prints("active charset: GBK\n");
-	} 
-	else 
+		print_utf8("active charset: GBK\n");
+	}
+	else
 	{
 		g_charset=CHARSET_UTF8;
-		prints("active charset: UTF8\n");
+		print_utf8("active charset: UTF8\n");
 	}
 }
 
 void index_release(DList *list)
 {
 	DList *tmp=NULL;
-	while(list) 
+	while(list)
 	{
 		free(list->data);
 		tmp=list;
@@ -402,7 +412,7 @@ DList* index_append(DList *list, long id, const char *name)
 {
 	index_item_t *item = NULL;
 	DList *ret = NULL;
-	
+
 	if(!(item=(index_item_t *)malloc(sizeof(index_item_t))))
 	{
 		fprintf(stderr,"malloc() error\n");
@@ -422,128 +432,125 @@ void on_cmd_ls(const char *arg)
 		on_cmd_ls_online();
 	else if(strequ(arg,"a")||strequ(arg,"all"))
 		on_cmd_ls_all();
-	else if(strequ(arg,"g")||strequ(arg,"group")) 
+	else if(strequ(arg,"g")||strequ(arg,"group"))
 		on_cmd_ls_group();
-	else if(strequ(arg,"q")||strequ(arg,"qun")) 
+	else if(strequ(arg,"q")||strequ(arg,"qun"))
 		on_cmd_ls_qun();
 	else if(strequ(arg,"b")||strequ(arg,"black"))
 		on_cmd_ls_black();
-	else 
+	else
 		helpinfo("ls");
 }
+
 
 void on_cmd_ls_online(void)
 {
 	int i=0;
-	Fetion_Account *account=NULL;
-	DList *iter=NULL;
+	const Fetion_Account *account=NULL;
 	char *name=NULL;
 
 	index_release(g_index);
 	g_index = NULL;
 	g_current = NULL;
-	
-  	iter = fx_get_account();
 
-	prints("+------------------åœ¨çº¿å¥½å‹----------------------+\n");
-  	while(iter)
+  	account = fx_get_first_account();
+
+	print_gbk("+--------------------ÔÚÏßºÃÓÑ------------------------+\n");
+  	while(account)
 	{
-  		if(account=(Fetion_Account*)iter->data) 
+		if(fx_is_on_line_by_account(account))
 		{
-			if(fx_is_on_line_by_account(account)) 
-			{
-				//to skip ourself.
-				if(FTION_UTYPE_UNSET == account->usr_type)
-					break;
-				name = account->local_name;
-				
-				if(!(name) && account->personal)
-					name = account->personal->nickname;
-			
-				prints(" %d\t%d\t%s\t%s\t%s\n",
-					++i,
-					account->id,
-					name,
-					get_state_string(account->online_status),
-					get_usr_type_string(account->usr_type)  
-				);
-				g_index = index_append(g_index,account->id,account->local_name);
-				if(!(i%20)) 
-					util_getch();
-				
-			}
+			//to skip ourself.
+			if(FTION_UTYPE_UNSET == account->usr_type)
+				break;
+			name = account->local_name;
+			if(!(name) && account->personal)
+				name = account->personal->nickname;
+
+			print_utf8(" %d\t%d\t%s", ++i, account->id,	name);
+			print_gbk( "\t\t%s\t%s\n", 
+				get_state_string(account->online_status),
+				get_usr_type_string(account->usr_type)
+			);
+			g_index = index_append(g_index,account->id,account->local_name);
+			if(!(i%20))
+				util_getch();
+
 		}
-  		iter = iter->next;
+  		account = fx_get_next_account(account);
   	}
-	prints("+------------------------------------------------+\n");
+	print_utf8("+----------------------------------------------------+\n");
 	//util_debug("the length of the list is %d \n", d_list_length(g_index));
 }
+
 
 void on_cmd_ls_all(void)
 {
 	int i = 0;
-	Fetion_Account *account = NULL;
-	DList *iter = NULL;
+	const Fetion_Account *account = NULL;
 	char *name = NULL;
 	int name_len = 0;
-	
+
 	index_release(g_index);
 	g_index = NULL;
 	g_current = NULL;
-	
-  	iter = fx_get_account();
 
-	prints("+-----------------æ‰€æœ‰å¥½å‹---------------------+\n");
-  	while(iter) 
+  	account = fx_get_first_account();
+
+	print_gbk("+-------------------ËùÓĞºÃÓÑ-----------------------+\n");
+  	while(account)
 	{
-  		if(account = (Fetion_Account*)iter->data) 
-		{
-			//æœ€åä¸€ä¸ªaccountæ˜¯è‡ªå·±ï¼Œè·³è¿‡ï¼Œå¦åˆ™ä¼šæœ‰é”™è¯¯.
-			if(FTION_UTYPE_UNSET == account->usr_type)
-				break;
+		/**
+		 * ×îºóÒ»¸öaccountÊÇ×Ô¼º£¬Ìø¹ı£¬·ñÔò»áÓĞ´íÎó.
+		 * Õâ¸öbugÔÚĞÂ°æ±¾µÄLibFetionÀïÃæÒÑ¾­½â¾öÁË
+		 */
+		//if(FTION_UTYPE_UNSET == account->usr_type)
+		//	break;
 
-			name = account->local_name;
+		name = account->local_name;
 
-			// å¦‚æœç”¨æˆ·æ²¡æœ‰è®¾ç½®æ˜¾ç¤ºåå­—,åˆ™æ˜¾ç¤ºç”¨æˆ·çš„æ˜µç§°
-			// ä½†æ˜¯ç°åœ¨åˆ¤æ–­çš„æ—¶å€™è¿˜æœ‰ç‚¹é—®é¢˜...
-			if(!name && account->personal)
-				name = account->personal->nickname;			
-			
-			prints(" %d\t%d\t%s\t%s\t%s\n",
-				++i,
-				account->id,
-				name,
-				get_state_string(account->online_status),
-				get_usr_type_string(account->usr_type)
-			);
-			
-			g_index = index_append(g_index, account->id, name);
+		// Èç¹ûÓÃ»§Ã»ÓĞÉèÖÃÏÔÊ¾Ãû×Ö,ÔòÏÔÊ¾ÓÃ»§µÄêÇ³Æ
+		// µ«ÊÇÏÖÔÚÅĞ¶ÏµÄÊ±ºò»¹ÓĞµãÎÊÌâ...
+		if(!name && account->personal)
+			name = account->personal->nickname;
 
-			if(!(i%20)) 
-				util_getch();
-		}
-  		iter = iter->next;
+		print_utf8(" %d\t%d\t%s", ++i, account->id,	name);
+		print_gbk( "\t\t%s\t%s\n", 
+			get_state_string(account->online_status),
+			get_usr_type_string(account->usr_type)
+		);
+
+		g_index = index_append(g_index, account->id, name);
+
+		if(!(i%20))
+			util_getch();
+  		account = fx_get_next_account(account);
   	}
-	prints("+----------------------------------------------+\n");
+	print_utf8("+--------------------------------------------------+\n");
 	//util_debug("the length of the list is %d \n", d_list_length(g_index));
 }
+
+
 
 void on_cmd_ls_group(void)
 {
 	Fetion_Group *group = NULL;
   	DList *iter=NULL;
 
-	iter = fx_get_group();
+	iter = (DList*)fx_get_group();
 
-	prints("+----------------å¥½å‹åˆ†ç»„----------------+\n");
-  	while(iter) 
+	print_gbk("+----------------ºÃÓÑ·Ö×é----------------+\n");
+  	while(iter)
 	{
-  		if(group=(Fetion_Group *)iter->data)	
-			prints(" åˆ†ç»„%d:\t%s\n",group->id,group->name);
+  		if(group=(Fetion_Group *)iter->data) {
+			print_gbk(" ·Ö×é:");
+			print_utf8("%d\t%s\n",group->id,group->name);
+		}
   		iter = iter->next;
   	}
-	prints("+----------------------------------------+\n");
+	print_utf8("+----------------------------------------+\n");
 }
+
 
 void on_cmd_ls_qun(void)
 {
@@ -554,20 +561,21 @@ void on_cmd_ls_qun(void)
 	index_release(g_index);
 	g_index = NULL;
 	g_current = NULL;
-	
-	iter = fx_get_qun();
 
-	prints("+-----------------é£ä¿¡ç¾¤-----------------+\n");
-  	while(iter) 
+	iter = (DList*)fx_get_qun();
+
+	print_gbk("+-----------------·ÉĞÅÈº-----------------+\n");
+  	while(iter)
 	{
-  		if(qun=(Fetion_Qun *)iter->data) 
+  		if(qun=(Fetion_Qun *)iter->data)
 		{
-			prints(" %d\té£ä¿¡ç¾¤:%d\t%s\n",++i,qun->id,qun->quninfo?qun->quninfo->name:"");
+			print_gbk(" %d\tÈº:",++i);
+			print_utf8("%d\t%s\n",qun->id,qun->quninfo?qun->quninfo->name:"");
 			g_index = index_append(g_index, qun->id, qun->quninfo?qun->quninfo->name:"");
   		}
   		iter = iter->next;
   	}
-	prints("+----------------------------------------+\n");
+	print_utf8("+----------------------------------------+\n");
 
 }
 
@@ -575,19 +583,19 @@ void on_cmd_ls_black(void)
 {
 	Fetion_Black *black = NULL;
   	DList *iter=NULL;
-	
-	iter = fx_get_blacklist();
 
-	prints("+----------------é»‘åå•------------------+\n");
-  	while(iter) 
+	iter = (DList*)fx_get_blacklist();
+
+	print_gbk("+----------------ºÚÃûµ¥------------------+\n");
+  	while(iter)
 	{
   		if(black=(Fetion_Black*)iter->data)
 		{
-			prints("ID:%-11d\tName:%s\n",black->uid, black->local_name);
+			print_utf8("ID:%-11d\tName:%s\n",black->uid, black->local_name);
   		}
   		iter=iter->next;
   	}
-	prints("+----------------------------------------+\n");
+	print_utf8("+----------------------------------------+\n");
 
 }
 
@@ -613,14 +621,14 @@ void  on_cmd_info(const char *arg2)
 	char *nickname = NULL;
 	int gender = 0;
 	char *impresa = NULL;
-	
+
 	id = index2id(id);
-	if(!(account = fx_get_account_by_id(id)))
+	if(!(account = (Fetion_Account*)fx_get_account_by_id(id)))
 	{
 		util_debug("fx_get_account_by_id() return NULL\n");
 		return;
 	}
-	
+
 	if(account->personal)
 	{
 		mobile_no = account->personal->mobile_no;
@@ -628,10 +636,14 @@ void  on_cmd_info(const char *arg2)
 		gender = account->personal->gender;
 		impresa = account->personal->impresa;
 	}
-	// ç›®å‰çš„libfetionä¼¼ä¹Fetion_Personalé‡Œé¢çš„å¾ˆå¤šæ¡ç›®éƒ½æ²¡æœ‰å®ç°,
-	// æ¯”å¦‚å¸¸ç”¨çš„æ‰‹æœºå·ï¼Œæ€§åˆ«.å·²ç»ç¡®è®¤å®ç°çš„æœ‰å±æ˜¾åç§°,é£ä¿¡å·, æ˜µç§°,å¿ƒæƒ…çŸ­è¯­
-	prints("é£ä¿¡å·:%d\tæ˜µç§°:%s\tæ˜¾ç¤ºå:%s\nå¿ƒæƒ…çŸ­è¯­:%s\n",
-		account->id, nickname, account->local_name, impresa	);
+	// Ä¿Ç°µÄlibfetionËÆºõFetion_PersonalÀïÃæµÄºÜ¶àÌõÄ¿¶¼Ã»ÓĞÊµÏÖ,
+	// ±ÈÈç³£ÓÃµÄÊÖ»úºÅ£¬ĞÔ±ğ.ÒÑ¾­È·ÈÏÊµÏÖµÄÓĞÆÁÏÔÃû³Æ,·ÉĞÅºÅ, êÇ³Æ,ĞÄÇé¶ÌÓï
+	print_gbk("·ÉĞÅºÅ:%d\têÇ³Æ:", account->id);
+	print_utf8("%s\t", nickname);
+	print_gbk("ÏÔÊ¾Ãû:");
+	print_utf8("%s\n", account->local_name);
+	print_gbk("ĞÄÇé¶ÌÓï:");
+	print_utf8("%s\n", impresa	);
 }
 void on_cmd_cd(const char *arg2)
 {
@@ -657,7 +669,7 @@ void on_cmd_send(const char *arg2, const char *arg3)
 	g_current = (index_item_t*)d_list_nth_data(g_index, id-1);
 	if(!g_current)
 		return;
-	fx_begin_dialog(g_current->id, NULL, NULL);	
+	fx_begin_dialog(g_current->id, NULL, NULL);
 	fx_dialog_send(g_current->id, msg, NULL, NULL);
 }
 
@@ -665,13 +677,13 @@ void on_cmd_sms(const char *arg2, const char *arg3)
 {
 	long id = atol(arg2);
 	const char *msg = arg3;
-	
+
 	id = index2id(id);
 	if(id > 100000)
 		fx_send_sms(id, msg, NULL, NULL);
 
 	//if((id > 100000) && fs_send_sms(id, msg))
-	//	prints("æå®š!\n");
+	//	print_utf8("¸ã¶¨!\n");
 	//log_message(arg2);
 	//log_message(arg3);
 }
@@ -681,39 +693,39 @@ long index2id(long id)
 	index_item_t *item = NULL;
 	unsigned int index_len = d_list_length(g_index);
 	//id is an index
-	if(id >= 1 && id <= index_len )	
+	if(id >= 1 && id <= index_len )
 	{
 		item = (index_item_t*)d_list_nth_data(g_index, id-1);
 		if(item)
 			id = item->id;
 	}
-	return id;	
+	return id;
 }
-	
+
 const char *get_state_string(int state)
 {
-	switch(state) 
+	switch(state)
 	{
 		case FX_STATUS_UNSET:
-			return "æœªè®¾ç½®";
+			return "Î´ÉèÖÃ";
 		case FX_STATUS_ONLINE:
-			return "åœ¨çº¿";
+			return "ÔÚÏß";
 		case FX_STATUS_BUSY:
-			return "å¿™ç¢Œ";
+			return "Ã¦Âµ";
 		case FX_STATUS_OFFLINE:
-			return "ç¦»çº¿";
+			return "ÀëÏß";
 		case FX_STATUS_AWAY:
-			return "é©¬ä¸Šå›æ¥";
+			return "ÂíÉÏ»ØÀ´";
 		case FX_STATUS_MEETING:
-			return "ä¼šè®®ä¸­";
+			return "»áÒéÖĞ";
 		case FX_STATUS_PHONE:
-			return "ç”µè¯ä¸­";
+			return "µç»°ÖĞ";
 		case FX_STATUS_DINNER:
-			return "å¤–å‡ºç”¨é¤";
+			return "Íâ³öÓÃ²Í";
 		case FX_STATUS_EXTENDED_AWAY:
-			return "ç¦»å¼€";
+			return "Àë¿ª";
 		case FX_STATUS_NUM_PRIMITIVES:
-			return "è‡ªå®šä¹‰";
+			return "×Ô¶¨Òå";
 		default:
 			return "";
 	}
@@ -736,19 +748,26 @@ const char *get_usr_type_string(int usr_type)
 int translate(char *buf)
 {
 	char *u=NULL;
-	if(CHARSET_UTF8==g_charset)
+	if(CHARSET_UTF8 == g_charset)
 		return ~0;
+	//util_debug("start to encode input\n");
 	if(!utf8_encode(buf,&u)) {
-		snprintf(buf,TEXT_LEN,u);
+		snprintf(buf, TEXT_LEN, u);
 		free(u);
+	//	util_debug("encode input sucessfully\n");
 		return ~0;
 	} else {
 		free(u);
+	//	util_debug("encode input unsucessfully\n");
 		return 0;
 	}
 }
 
-void prints(const char *fmt,...)
+
+/**
+ * Print a UTF8 string in the screen
+ */
+void print_utf8(const char *fmt,...)
 {
 	va_list ap;
 	char *gb=NULL;
@@ -757,16 +776,41 @@ void prints(const char *fmt,...)
 	va_start(ap, fmt);
 	vsnprintf(buf,1024,fmt,ap);
 	va_end(ap);
-	if(CHARSET_UTF8 == g_charset) 
+	if(CHARSET_UTF8 == g_charset)
 	{
 		printf(buf);
 		return;
 	}
 	if(utf8_decode(buf,&gb))
-		fprintf(stderr,"prints() error\n");
+		fprintf(stderr,"print_utf8() error\n");
 	printf(gb);
 	free(gb);
 }
+
+/**
+ * Print a GBK string in the screen
+ */
+void print_gbk(const char *fmt,...)
+{
+	va_list ap;
+	char *utf=NULL;
+	char buf[1024];
+
+	va_start(ap, fmt);
+	vsnprintf(buf,1024,fmt,ap);
+	va_end(ap);
+	if(CHARSET_GBK == g_charset)
+	{
+		printf(buf);
+		return;
+	}
+	if(utf8_encode(buf,&utf))
+		fprintf(stderr,"print_utf8() error\n");
+	printf(utf);
+	free(utf);
+}
+
+
 
 void log_message(const char *fmt,...)
 {
@@ -800,14 +844,14 @@ int on_out_cmd(const char *input)
 {
 	while(isspace(*input))
 		input++;
-	if('!'==input[0]) 
+	if('!'==input[0])
 	{
 		++input;
 		while(isspace(*input))
 			input++;
 		system(input);
 		return ~0;
-	} else 
+	} else
 		return 0;
 }
 
@@ -824,18 +868,18 @@ int parse_input(char *input, char **arg1, char **arg2, char **arg3)
 	{
 		if(isspace(input[i])&&!isspace(input[i-1]))
 		{
-			if(!brk1&&!brk2) 
+			if(!brk1&&!brk2)
 				brk1=&input[i];
-			else if(brk1&&!brk2) 
+			else if(brk1&&!brk2)
 				brk2=&input[i];
-			else 
+			else
 				break;
 		}
 	}
 
 	if(brk1)
 	{
-		*brk1='\0'; 
+		*brk1='\0';
 		p=brk1+1;
 		while(isspace(*p))p++;
 		if(!p[0]) return 1;
@@ -846,11 +890,11 @@ int parse_input(char *input, char **arg1, char **arg2, char **arg3)
 
 	if(brk2)
 	{
-		*brk2='\0';	
+		*brk2='\0';
 		p=brk2+1;
 		while(isspace(*p))
 			p++;
-		if(!p[0]) 
+		if(!p[0])
 			return 2;
 		*arg3=p;
 		return 3;
@@ -861,12 +905,11 @@ int parse_input(char *input, char **arg1, char **arg2, char **arg3)
 
 void usage(void)
 {
-	fprintf(stderr,"Usage:\n"FX_PACKAGE" -u phone -p[password] [-i] [-l] [-g] [-w who] [-t \"SMS text\"]\n"
+	fprintf(stderr,"Usage:\n"FX_PACKAGE" -u phone -p[password] [-i] [-l] [-w who] [-t \"SMS text\"]\n"
 		"       -u phone/fetion  login with phone number or fetion number\n"
 		"       -p[password]     no space before [password]\n"
 		"       -i               login invisible\n"
 		"       -l               keep a chatlog\n"
-		"       -g               activate GBK charset\n"
 		"       -w who           the Fetion number of the one you want to sent a SMS\n"
 		"       -t \"SMS text\"    the SMS content\n"
 	);
@@ -879,13 +922,15 @@ void init_options(int argc,char **argv)
 	const char *g_opt_str ="u:p::ilgw:t:d";
 
 	if(argc<4)
-	{	
-		usage(); 
-		exit(1); 
+	{
+		usage();
+		exit(1);
 	}
 
-#ifdef WIN32
+#ifdef _WIN32
 	g_charset = CHARSET_GBK;
+#else
+	g_charset = CHARSET_UTF8;
 #endif
 
 	while(1)
@@ -895,41 +940,41 @@ void init_options(int argc,char **argv)
 		switch(c) {
 		case 'u':
 			snprintf(g_user,BUF_LEN,mfx_optarg);
-			prints("user:%s\n",g_user);
+			print_utf8("user:%s\n",g_user);
 			break;
 		case 'p':
 			if(mfx_optarg)
 				snprintf(g_passwd,BUF_LEN,mfx_optarg);
 			else  {
-				prints("password:");
+				print_utf8("password:");
 				util_get_password(g_passwd,BUF_LEN);
-				prints("\n");
+				print_utf8("\n");
 			}
 			break;
 		case 'i':
 			g_is_invisible = ~0;
-			prints("login invisible\n");
+			print_utf8("login invisible\n");
 			break;
 		case 'l':
 			g_is_log = ~0;
-			prints("keep a log\n");
+			print_utf8("keep a log\n");
 			break;
-		case 'g':
-			g_charset = CHARSET_GBK;
-			prints("charset:GBK\n");
-			break;
+//		case 'g':
+//			g_charset = CHARSET_GBK;
+//			print_utf8("charset:GBK\n");
+//			break;
 		case 'w':
 			snprintf(g_who, BUF_LEN, mfx_optarg);
-			prints("to:%s\n",g_who);
+			print_utf8("to:%s\n",g_who);
 			break;
 		case 't':
-			//å¦‚ä½•å®Œæ•´æ˜¾ç¤º -t åé¢çš„å¸¦ç©ºæ ¼ä¿¡æ¯å‘¢?
+			//ÈçºÎÍêÕûÏÔÊ¾ -t ºóÃæµÄ´ø¿Õ¸ñĞÅÏ¢ÄØ?
 			snprintf(g_text, TEXT_LEN, mfx_optarg);
-			prints("text:%s\n", g_text);
+			print_utf8("text:%s\n", g_text);
 			break;
 		case 'd':
 			g_is_debug = ~0;
-			prints("run in debug mode\n");
+			print_utf8("run in debug mode\n");
 			break;
 		default:
 			break;
@@ -959,26 +1004,28 @@ void on_new_message(Sint64 id)
 	char *msg = NULL;
 	Fetion_MSG *fxMsg = NULL;
 	Fetion_Account *account = NULL;
-	
+
 	if(fx_is_qun_by_id(id))
 	{
 		on_new_qun_message(id);
 		return;
 	}
-	if(!(account = fx_get_account_by_id(id)))
+	if(!(account = (Fetion_Account*)fx_get_account_by_id(id)))
 	{
 		util_debug("on_new_message()->fx_get_account_by_id()\n");
 		return;
 	}
-	if(!(fxMsg = fx_get_msg(id)))
+	if(!(fxMsg = (Fetion_MSG*)fx_get_msg(id)))
 	{
 		util_debug("on_new_message()->fx_get_msg()\n");
 		return;
 	}
-	msg = util_filter_msg(fxMsg->message); 
-	prints("\næ¥è‡ª %s(%ld) çš„æ–°æ¶ˆæ¯:\n", account->local_name, account->id);
-	prints(msg);
-	prints("\n");
+	msg = util_filter_msg(fxMsg->message);
+	print_gbk("\nÀ´×Ô ");
+	print_utf8("%s(%ld)", account->local_name, account->id);
+	print_gbk(" µÄĞÂÏûÏ¢:\n");
+	print_utf8(msg);
+	print_utf8("\n");
 	log_message(msg);
 	if(msg)
 		free(msg);
@@ -990,11 +1037,11 @@ void show_message(Sint64 id)
 	char *msg = NULL;
 	Fetion_MSG *fxMsg = NULL;
 
-	if(!(fxMsg=fx_get_msg(id)))
+	if(!(fxMsg = (Fetion_MSG*)fx_get_msg(id)))
 		return;
-	msg = util_filter_msg(fxMsg->message); 
-	//prints(fxMsg->message);
-	prints(msg);
+	msg = util_filter_msg(fxMsg->message);
+	//print_utf8(fxMsg->message);
+	print_utf8(msg);
 	log_message(msg);
 	if(msg)
 		free(msg);
@@ -1002,7 +1049,7 @@ void show_message(Sint64 id)
 }
 
 void on_new_qun_message(Sint64 qun_id)
-{	
+{
 	long sender=0;
 	char *msg=NULL;
 	char *qun_name=NULL;
@@ -1013,14 +1060,15 @@ void on_new_qun_message(Sint64 qun_id)
 	Fetion_QunMember *qun_member=NULL;
 	DList *dl=NULL;
 
-	if(!(fxMsg = fx_get_msg(qun_id))) return;
+	if(!(fxMsg = (Fetion_MSG*)fx_get_msg(qun_id))) 
+		return;
 	sender = fxMsg->ext_id;
-	msg = util_filter_msg(fxMsg->message); 
-	if(!(fx_qun = fx_get_qun_by_id(qun_id)))
+	msg = util_filter_msg(fxMsg->message);
+	if(!(fx_qun = (Fetion_Qun*)fx_get_qun_by_id(qun_id)))
 	{
-		if(msg) 
+		if(msg)
 			free(msg);
-		fx_destroy_msg(fxMsg);	
+		fx_destroy_msg(fxMsg);
 		return;
 	}
 	qun_info = fx_qun->quninfo;
@@ -1031,27 +1079,29 @@ void on_new_qun_message(Sint64 qun_id)
 		qun_member=(Fetion_QunMember*)dl->data;
 		if(qun_member && qun_member->id==sender)
 		{
-			sender_name=(qun_member->iicnickname?qun_member->iicnickname:qun_member->nickname?qun_member->nickname:""); 
+			sender_name=(qun_member->iicnickname?qun_member->iicnickname:qun_member->nickname?qun_member->nickname:"");
 			break;
 		}
 		dl=d_list_next(dl);
 	}
-	prints(sender_name);
-	prints("(%ld)@ç¾¤:",sender);
-	prints(qun_name);
-	prints("(%ld)\n",qun_id);
-	prints(msg);
-	prints("\n");
+	print_utf8(sender_name);
+	print_utf8("(%ld)",sender);
+	print_gbk("@Èº:");
+	print_utf8(qun_name);
+	print_utf8("(%ld)\n",qun_id);
+	print_utf8(msg);
+	print_utf8("\n");
 
 	log_message(sender_name);
-	log_message("(%ld)@ç¾¤:",sender);
+	log_message("(%ld)@Èº:",sender);
 	log_message(qun_name);
 	log_message("(%ld)\n",qun_id);
 	log_message(msg);
 	log_message("\n");
 
-	if(msg) free(msg);
-	fx_destroy_msg(fxMsg);	
+	if(msg) 
+		free(msg);
+	fx_destroy_msg(fxMsg);
 }
 
 void on_sys_message(Sint64 id)
@@ -1059,13 +1109,13 @@ void on_sys_message(Sint64 id)
 	char *msg=NULL;
 	Fetion_MSG *fxMsg=NULL;
 
-	if(!(fxMsg=fx_get_msg(id)))
+	if(!(fxMsg = (Fetion_MSG*)fx_get_msg(id)))
 		return;
-	msg = util_filter_msg(fxMsg->message); 
-	prints("ç³»ç»Ÿæ¶ˆæ¯:\n");
-	prints(msg);
-	prints("\n");
-	if(msg) 
+	msg = util_filter_msg(fxMsg->message);
+	print_gbk("ÏµÍ³ÏûÏ¢:\n");
+	print_utf8(msg);
+	print_utf8("\n");
+	if(msg)
 		free(msg);
 	fx_destroy_msg(fxMsg);
 }
@@ -1074,9 +1124,9 @@ void on_sys_message(Sint64 id)
 
 void on_set_state_ok(int state)
 {
-	prints("è®¾ç½®çŠ¶æ€æˆåŠŸ,å½“å‰çŠ¶æ€: ");
-	prints(get_state_string(state));
-	prints("\n");
+	print_gbk("ÉèÖÃ×´Ì¬³É¹¦,µ±Ç°×´Ì¬: ");
+	print_gbk(get_state_string(state));
+	print_utf8("\n");
 }
 
 void on_sys_err_network(int err)
@@ -1088,60 +1138,60 @@ void on_sys_err_network(int err)
 void on_sys_deregistered(void)
 {
 	g_status=STATUS_DEREGISTERED;
-	prints("you have login in other pc, i will quit\n");
+	print_utf8("you have login in other pc, i will quit\n");
 }
 
-void on_sys_dialog_message(int message,int fx_msg,Sint64 who)
+void on_sys_dialog_message(int message, Fetion_MSG *fx_msg, Sint64 who)
 {
 	switch(message)
 	{
-		case FX_SMS_OK: 
-		case FX_DIA_SEND_OK: 
-		case FX_QUN_SEND_OK: 
-		case FX_QUN_SMS_OK: 
+		case FX_SMS_OK:
+		case FX_DIA_SEND_OK:
+		case FX_QUN_SEND_OK:
+		case FX_QUN_SMS_OK:
 			util_debug("send msg to %ld successfully\n", who);
-			if(!fx_msg)	
+			if(!fx_msg)
 				return;
 			fx_destroy_msg((Fetion_MSG *)fx_msg);
 			break;
-		case FX_SMS_FAIL: 
-		case FX_DIA_SEND_FAIL: 
-		case FX_QUN_SEND_FAIL: 
-		case FX_QUN_SMS_FAIL: 
-		case FX_SMS_FAIL_LIMIT: 
-		case FX_QUN_SMS_FAIL_LIMIT: 
-			prints("fail to send msg to %ld\n", who);
-			if(!fx_msg)	
+		case FX_SMS_FAIL:
+		case FX_DIA_SEND_FAIL:
+		case FX_QUN_SEND_FAIL:
+		case FX_QUN_SMS_FAIL:
+		case FX_SMS_FAIL_LIMIT:
+		case FX_QUN_SMS_FAIL_LIMIT:
+			print_utf8("fail to send msg to %ld\n", who);
+			if(!fx_msg)
 				return;
 			fx_destroy_msg((Fetion_MSG *)fx_msg);
 			break;
-		case FX_SMS_TIMEOUT: 
-		case FX_DIA_SEND_TIMEOUT: 
-		case FX_QUN_SEND_TIMEOUT: 
-		case FX_QUN_SMS_TIMEOUT: 
-			prints("send msg to %ld timeout,i will resend it for you...\n", who);
+		case FX_SMS_TIMEOUT:
+		case FX_DIA_SEND_TIMEOUT:
+		case FX_QUN_SEND_TIMEOUT:
+		case FX_QUN_SMS_TIMEOUT:
+			print_utf8("send msg to %ld timeout,i will resend it for you...\n", who);
 			//time out should not to destroy msg, beacuse the system will resend by itself..
 			//the libfetion will resend the message???
 			//if(!fx_msg)	return;
 			//fx_destroy_msg((Fetion_MSG *)fx_msg);
 			break;
-	}	
+	}
 }
 
 //void cb_cmd_state(int message, WPARAM wParam, LPARAM lParam, void* args)
 //{
-//	prints("å½“å‰çŠ¶æ€: %s\n", get_state_string( fx_get_user_state() ));	
+//	print_utf8("µ±Ç°×´Ì¬: %s\n", get_state_string( fx_get_user_state() ));
 //}
 
 void cb_cmd_self(int message, WPARAM wParam, LPARAM lParam, void* args)
 {
-	prints("ç»™è‡ªå·±å‘çŸ­ä¿¡æˆåŠŸ!\n");	
+	print_gbk("¸ø×Ô¼º·¢¶ÌĞÅ³É¹¦!\n");
 }
 
 
 //void cb_fx_dialog(int message, WPARAM wParam, LPARAM lParam, void* args)
 //{
-//	on_new_message((Sint64)lParam);	
+//	on_new_message((Sint64)lParam);
 //}
 
 void cb_system_msg (int message, WPARAM wParam, LPARAM lParam, void* args)
@@ -1170,14 +1220,14 @@ void cb_system_msg (int message, WPARAM wParam, LPARAM lParam, void* args)
 		case FX_ADDACCOUNT_APP:
 			//emit signal_AddAccountApp((char*)(lParam), (char*)wParam);
 			break;
-		case FX_STATUS_OFFLINE: 
+		case FX_STATUS_OFFLINE:
 		case FX_STATUS_ONLINE :
 		case FX_STATUS_BUSY:
 		case FX_STATUS_AWAY:
 		case FX_STATUS_MEETING:
 		case FX_STATUS_PHONE:
 		case FX_STATUS_DINNER:
-		case FX_STATUS_EXTENDED_AWAY: 
+		case FX_STATUS_EXTENDED_AWAY:
 		case FX_STATUS_NUM_PRIMITIVES:
 		case FX_ACCOUNT_UPDATA_OK:
 			//emit signal_UpdateAcInfo(qlonglong(lParam));
@@ -1194,21 +1244,21 @@ void cb_system_msg (int message, WPARAM wParam, LPARAM lParam, void* args)
 		case FX_SET_REFUSE_SMS_DAY_FAIL:
 			util_debug("FX_SET_REFUSE_SMS_DAY_FAIL:0x%04X\n",FX_SET_REFUSE_SMS_DAY_FAIL);
 			break;
-		case FX_DIA_SEND_OK: 
-		case FX_DIA_SEND_FAIL: 
+		case FX_DIA_SEND_OK:
+		case FX_DIA_SEND_FAIL:
 		case FX_DIA_SEND_TIMEOUT:
-		case FX_SMS_OK: 
-		case FX_SMS_FAIL: 
-		case FX_SMS_FAIL_LIMIT: 
-		case FX_SMS_TIMEOUT: 
-		case FX_QUN_SEND_OK: 
-		case FX_QUN_SEND_FAIL: 
-		case FX_QUN_SEND_TIMEOUT: 
-		case FX_QUN_SMS_OK: 
-		case FX_QUN_SMS_FAIL: 
-		case FX_QUN_SMS_FAIL_LIMIT: 
-		case FX_QUN_SMS_TIMEOUT: 
-			on_sys_dialog_message(message,wParam, (Sint64)lParam);
+		case FX_SMS_OK:
+		case FX_SMS_FAIL:
+		case FX_SMS_FAIL_LIMIT:
+		case FX_SMS_TIMEOUT:
+		case FX_QUN_SEND_OK:
+		case FX_QUN_SEND_FAIL:
+		case FX_QUN_SEND_TIMEOUT:
+		case FX_QUN_SMS_OK:
+		case FX_QUN_SMS_FAIL:
+		case FX_QUN_SMS_FAIL_LIMIT:
+		case FX_QUN_SMS_TIMEOUT:
+			on_sys_dialog_message(message, (Fetion_MSG*)wParam, (Sint64)lParam);
 			break;
 		case FX_REMOVE_BLACKLIST_OK:
 			util_debug("FX_REMOVE_BLACKLIST_OK:0x%04X\n",FX_REMOVE_BLACKLIST_OK);
@@ -1218,7 +1268,7 @@ void cb_system_msg (int message, WPARAM wParam, LPARAM lParam, void* args)
 			break;
 		case FX_CURRENT_VERSION:
 			if(LIBFETION_VERSION < (int)wParam)
-				prints("LibFetion have new version, access http://www.libfetion.cn for more infomation.\n");
+				print_utf8("LibFetion have new version, access http://www.libfetion.cn for more infomation.\n");
 			break;
 		case FX_ADD_BUDDY_OK:
 			util_debug("FX_ADD_BUDDY_OK:0x%04X\n",FX_ADD_BUDDY_OK);
@@ -1246,22 +1296,22 @@ void cb_system_msg (int message, WPARAM wParam, LPARAM lParam, void* args)
 			break;
 		case FX_ADD_GROUP_FAIL:
 			util_debug("FX_ADD_GROUP_FAIL:0x%04X\n",FX_ADD_GROUP_FAIL);
-			if(wParam) 
+			if(wParam)
 				free((char*)(int)wParam);
 			break;
 		case FX_DEL_GROUP_FAIL:
 			util_debug("FX_DEL_GROUP_FAIL:0x%04X\n",FX_DEL_GROUP_FAIL);
-			if(wParam) 
+			if(wParam)
 				free((char*)(int)wParam);
 			break;
 		case FX_SET_BUDDY_INFO_FAIL:
 			util_debug("FX_SET_BUDDY_INFO_FAIL:0x%04X\n",FX_SET_BUDDY_INFO_FAIL);
-			if(wParam) 
+			if(wParam)
 				free((char*)(int)wParam);
 			break;
 		case FX_RENAME_GROUP_FAIL:
 			util_debug("FX_RENAME_GROUP_FAIL:0x%04X\n",FX_RENAME_GROUP_FAIL);
-			if(wParam) 
+			if(wParam)
 				free((char*)(int)wParam);
 			break;
 		case FX_REMOVE_BLACKLIST_FAIL:
@@ -1289,72 +1339,72 @@ void cb_system_msg (int message, WPARAM wParam, LPARAM lParam, void* args)
 
 void cb_fx_login(int message, WPARAM wParam, LPARAM lParam, void* args)
 {
-	switch(message)	
+	switch(message)
 	{
 	case FX_LOGIN_URI_ERROR:
 		util_debug("FX_LOGIN_URI_ERROR:0x%04X\n",FX_LOGIN_URI_ERROR);
-		prints("login fail because of wrong phone No. or fetion No. \n");
+		print_utf8("login fail because of wrong phone No. or fetion No. \n");
 		exit(FX_LOGIN_URI_ERROR);
 		break;
 	case FX_LOGIN_CONNECTING:
 		util_debug("FX_LOGIN_CONNECTING:0x%04X\n",FX_LOGIN_CONNECTING);
-		prints("connecting the server... \n");
+		print_utf8("connecting the server... \n");
 		break;
 	case FX_LOGIN_WAIT_AUTH:
 		util_debug("FX_LOGIN_WAIT_AUTH:0x%04X\n",FX_LOGIN_WAIT_AUTH);
-		prints("validating account and password... \n");
+		print_utf8("validating account and password... \n");
 		break;
 	case FX_LOGIN_AUTH_OK:
 		util_debug("FX_LOGIN_AUTH_OK:0x%04X\n",FX_LOGIN_AUTH_OK);
-		prints("validate account and password successfully \n");
+		print_utf8("validate account and password successfully \n");
 		break;
 	case FX_LOGIN_FAIL:
 		util_debug("FX_LOGIN_FAIL:0x%04X\n",FX_LOGIN_FAIL);
-		prints("login fail\n");
+		print_utf8("login fail\n");
 		exit(FX_LOGIN_FAIL);
 		break;
 	case FX_LOGIN_NETWORK_ERROR:
 		util_debug("FX_LOGIN_NETWORK_ERROR:0x%04X\n",FX_LOGIN_NETWORK_ERROR);
-		prints("network error, check your network connection please \n");
+		print_utf8("network error, check your network connection please \n");
 		exit(FX_LOGIN_NETWORK_ERROR);
 		break;
 	case FX_LOGIN_UNKOWN_ERROR :
 		util_debug("FX_LOGIN_UNKOWN_ERROR:0x%04X\n",FX_LOGIN_UNKOWN_ERROR);
-		prints("unknown error occurs\n");
+		print_utf8("unknown error occurs\n");
 		exit(FX_LOGIN_UNKOWN_ERROR);
 		break;
 	case FX_LOGIN_UNKOWN_USR:
 		util_debug("FX_LOGIN_UNKOWN_USR:0x%04X\n",FX_LOGIN_UNKOWN_USR);
-		prints("wrong user account\n");
+		print_utf8("wrong user account\n");
 		exit(FX_LOGIN_UNKOWN_USR);
 		break;
 	case FX_LOGIN_GCL_GETTING:
 		util_debug("FX_LOGIN_GCL_GETTING:0x%04X\n",FX_LOGIN_GCL_GETTING);
-		prints("getting the connection list...\n");
+		print_utf8("getting the connection list...\n");
 		break;
 	case FX_LOGIN_GCL_OK:
 		util_debug("FX_LOGIN_GCL_OK:0x%04X\n",FX_LOGIN_GCL_OK);
-		prints("get the connection list ok\n");
+		print_utf8("get the connection list ok\n");
 		break;
 	case FX_LOGIN_GCL_FAIL:
 		util_debug("FX_LOGIN_GCL_FAIL:0x%04X\n",FX_LOGIN_GCL_FAIL);
-		prints("fail to get the connection list, type 'exit' to quit the program\n");
+		print_utf8("fail to get the connection list, type 'exit' to quit the program\n");
 		break;
 	case FX_LOGIN_GP_GETTING:
 		util_debug("FX_LOGIN_GP_GETTING:0x%04X\n",FX_LOGIN_GP_GETTING);
-		prints("getting the presence info...\n");
+		print_utf8("getting the presence info...\n");
 		break;
 	case FX_LOGIN_GP_OK:
 		util_debug("FX_LOGIN_GP_OK:0x%04X\n",FX_LOGIN_GP_OK);
-		prints("get the presence info ok\n");
+		print_utf8("get the presence info ok\n");
 		break;
 	case FX_LOGIN_GP_FAIL:
 		util_debug("FX_LOGIN_GP_FAIL:0x%04X\n",FX_LOGIN_GP_FAIL);
-		prints("fail to get the presence info,type 'exit' to quit the program\n");
+		print_utf8("fail to get the presence info,type 'exit' to quit the program\n");
 		break;
 	case FX_LOGIN_OK:
 		util_debug("FX_LOGIN_OK:0x%04X\n",FX_LOGIN_OK);
-		prints("login successfully!\nServer address:%s\ntype 'help' to get help information...\n",
+		print_utf8("login successfully!\nServer address:%s\ntype 'help' to get help information...\n",
 			fx_get_serve_address());
 		g_status = STATUS_ONLINE;
 		fx_set_system_msg_cb(cb_system_msg, NULL);
@@ -1364,18 +1414,18 @@ void cb_fx_login(int message, WPARAM wParam, LPARAM lParam, void* args)
 void cb_fx_relogin(int message, WPARAM wParam, LPARAM lParam, void* args)
 {
 	static int relogin_try;
-	if(relogin_try>10) 
+	if(relogin_try>10)
 	{
-		prints("you have tried to many times, maybe you should check you network connection\n");
+		print_utf8("you have tried to many times, maybe you should check you network connection\n");
 		g_status = STATUS_OFFLINE;
 		return;
 	}
-	switch(message) 
+	switch(message)
 	{
 		case FX_LOGIN_URI_ERROR:
 		case FX_LOGIN_FAIL:
 		case FX_LOGIN_NETWORK_ERROR:
-		case FX_LOGIN_UNKOWN_ERROR :   
+		case FX_LOGIN_UNKOWN_ERROR :
 		case FX_LOGIN_UNKOWN_USR:
 		case FX_LOGIN_GP_FAIL:
 			fx_relogin(cb_fx_relogin, NULL);
@@ -1383,7 +1433,7 @@ void cb_fx_relogin(int message, WPARAM wParam, LPARAM lParam, void* args)
 			relogin_try++;
 			break;
 		case FX_LOGIN_OK :
-			prints("relogin successfully\n");
+			print_utf8("relogin successfully\n");
 			g_status = STATUS_ONLINE;
 			relogin_try=0;
 			break;
@@ -1411,9 +1461,9 @@ char *util_filter_msg(const char *msg)
 }
 
 int util_getch(void)
-{	
+{
 #ifdef _WIN32
-	return getch();
+	return _getch();
 #else
 	struct termios oldt,newt;
 	int ch;
@@ -1428,25 +1478,25 @@ int util_getch(void)
 #endif
 }
 
-int util_get_password(char* pwd, int len) 
+int util_get_password(char* pwd, int len)
 {
 	int i=0;
 	char ch;
 
-	while(i < len) 
+	while(i < len)
 	{
 		ch = util_getch();
-		if(ch == '\r' || ch == '\n') 
+		if(ch == '\r' || ch == '\n')
 		{
 			pwd[i] = '\0';
 			break;
-		} 
-		else if(ch == '\b') 
+		}
+		else if(ch == '\b')
 		{
 			printf("\b");
 			--i;
-		} 
-		else 
+		}
+		else
 		{
 			pwd[i++] = ch;
 			printf("*");
@@ -1467,5 +1517,3 @@ void util_debug(char* info, ...)
 	va_end(ap);
 	//fprintf(stderr,"\n+-------------------------------------+\n");
 }
-
-

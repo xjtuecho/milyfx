@@ -1,7 +1,7 @@
 /**
 * \file event.h
 * \author dengdd <dedodong@163.com>
-* \date 2008/1/1
+* \date 2009/2/11
 * 
 * This file includes fetion event definitions
 * by libfetion.
@@ -178,6 +178,20 @@ extern "C" {
 */
 #define FX_LOGIN_SERVER_REFUSE       FX_EVENT_SPARE  + 0x0003
 
+/**
+* \def FX_LOGIN_GSML_OK
+* \brief login state is fetion get schedule sms list ok  
+* 
+*/
+#define FX_LOGIN_GSML_OK       FX_EVENT_SPARE  + 0x0004
+
+/**
+* \def FX_LOGIN_GSML_FAIL
+* \brief login state is fetion get schedule sms list fail  
+* 
+*/
+#define FX_LOGIN_GSML_FAIL       FX_EVENT_SPARE  + 0x0005
+
 /** @} end of login_event */
 
 	
@@ -243,15 +257,15 @@ extern "C" {
 #define FX_SYS_MESSAGE            FX_EVENT_BASE + 0x0012
 
 /**
-* \def FX_UNDGE_MESSAGE
-* \brief a undge message received
+* \def FX_NUDGE_MESSAGE
+* \brief a nudge message received
 *
-* This message is posted when the client receive a undge message..
+* This message is posted when the client receive a nudge message..
  *
  * \param lParam The message sender.
 * 
 */
-#define FX_UNDGE_MESSAGE           FX_EVENT_BASE + 0x0013
+#define FX_NUDGE_MESSAGE           FX_EVENT_BASE + 0x0013
 /** @} end of recv_msg_event */
 
 
@@ -322,8 +336,8 @@ extern "C" {
 #define FX_DIA_BG_FAIL           FX_EVENT_BASE + 0x0032//begin dialog fail
 
 /**
-* \def FX_DIA_BG_FAIL
-* \brief a dialog begin fail 
+* \def FX_DIA_BG_TIMEOUT
+* \brief a dialog begin timeout 
 *
 */
 #define FX_DIA_BG_TIMEOUT        FX_EVENT_BASE + 0x0033//begin dialog timeout
@@ -334,14 +348,14 @@ extern "C" {
 * \brief a dialog send message ok
 *
 */
-#define FX_DIA_SEND_OK           FX_EVENT_BASE + 0x0032//发送消息成功
+#define FX_DIA_SEND_OK           FX_EVENT_BASE + 0x0034//发送消息成功
 
 /**
 * \def FX_DIA_SEND_FAIL
 * \brief a dialog send message fail
 *
 */
-#define FX_DIA_SEND_FAIL         FX_EVENT_BASE + 0x0033//发送消息失败
+#define FX_DIA_SEND_FAIL         FX_EVENT_BASE + 0x0035//发送消息失败
 
 
 /**
@@ -349,7 +363,7 @@ extern "C" {
 * \brief a dialog send message timeout
 *
 */
-#define FX_DIA_SEND_TIMEOUT      FX_EVENT_BASE + 0x0034//发送消息失败
+#define FX_DIA_SEND_TIMEOUT      FX_EVENT_BASE + 0x0036//发送消息失败
 
 
 /**
@@ -357,7 +371,7 @@ extern "C" {
 * \brief a dialog unkown error message
 *
 */
-#define FX_DIA_UNKOWN_ERROR      FX_EVENT_BASE + 0x0035//发送消息未知错误. this message may be noever happened.
+#define FX_DIA_UNKOWN_ERROR      FX_EVENT_BASE + 0x0037//发送消息未知错误. this message may be noever happened.
 
 /** @} end of dialog_event */
 
@@ -724,6 +738,49 @@ extern "C" {
 #define FX_REMOVE_BLACKLIST_TIMEOUT  FX_EVENT_BASE + 0x0076 
 
 /**
+* \def FX_SET_SCH_SMS_FAIL
+* \brief fetion set schedule sms fail. 
+*
+*/
+#define	FX_SET_SCH_SMS_FAIL  FX_EVENT_BASE + 0x0077
+
+
+/**
+* \def FX_SET_SCH_SMS_OK
+* \brief fetion set schedule sms ok. 
+*
+*/
+#define	FX_SET_SCH_SMS_OK  FX_EVENT_BASE + 0x0078 
+
+/**
+* \def FX_SET_SCH_SMS_TIMEOUT
+* \brief fetion set schedule sms timeout. 
+*
+*/
+#define FX_SET_SCH_SMS_TIMEOUT  FX_EVENT_BASE + 0x0079
+
+/**
+* \def FX_DEL_SCH_SMS_FAIL
+* \brief fetion delete schedule sms fail. 
+*
+*/
+#define FX_DEL_SCH_SMS_FAIL  FX_EVENT_BASE + 0x007A
+
+/**
+* \def FX_DEL_SCH_SMS_OK
+* \brief fetion delete schedule sms ok. 
+*
+*/
+#define FX_DEL_SCH_SMS_OK  FX_EVENT_BASE + 0x007B
+
+/**
+* \def FX_DEL_SCH_SMS_TIMEOUT
+* \brief fetion delete schedule sms timeout. 
+*
+*/
+#define FX_DEL_SCH_SMS_TIMEOUT  FX_EVENT_BASE + 0x007C
+
+/**
 * \def FX_DEL_BUDDY_OK
 * \brief fetion delete friend ok. 
 *
@@ -769,7 +826,7 @@ extern "C" {
 * wParam is F_FILE_INFO 
 * lParam is uid
 */
-#define FX_RECEIVE_FILE  FX_EVENT_BASE + 0x0085 
+#define FX_RECEIVE_FILE  FX_EVENT_BASE + 0x0087 
 
 /**
 * \def FX_CURRENT_VERSION
@@ -777,7 +834,9 @@ extern "C" {
 *
 * \param wParam The current version value.
 */ 
-#define FX_CURRENT_VERSION  FX_EVENT_BASE + 0x0086 
+#define FX_CURRENT_VERSION  FX_EVENT_BASE + 0x0088 
+
+
 /** @} end of system_misc_event */
 
 /**
