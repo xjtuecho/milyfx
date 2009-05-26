@@ -1,7 +1,7 @@
 /**
 * \file common.h
 * \author dengdd <dedodong@163.com>
-* \date 2008/1/1
+* \date 2009/2/11
 * 
 * This file includes macro definitions and typedefs that commonly used by libfetion.
 *
@@ -23,16 +23,18 @@ This file is part of libfetion, a cross-operating-system library to operate Chin
 #include "event.h"
 
 #ifdef WIN32
-#include "../build/config-win32.h"
+	#ifdef _WIN32_WCE
+		#include "../build/config-winCE.h"
+	#else
+		#include "../build/config-win32.h"
+	#endif 
 #else //no WIN32
 #include "../fxconfig.h"
 #endif  //end #ifdef WIN32
 
 #else  // no __LIBFETION_LIB__
-/**
-#include "libfetion/fxconfig.h"
-#include "libfetion/event.h"
-**/
+//#include "libfetion/fxconfig.h"
+//#include "libfetion/event.h"
 #include "fxconfig.h"
 #include "event.h"
 #endif
@@ -323,7 +325,7 @@ typedef long            LONG;
 * \var typedef unsigned int WPARAM
 * \brief A type definition for the first message paramter.
 */
-#if defined(_linux_) && defined(_i686_)
+#if defined(_64BIT_)
 typedef unsigned long    WPARAM;
 #else
 typedef unsigned int    WPARAM;

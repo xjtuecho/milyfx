@@ -1,0 +1,32 @@
+#
+# Makefile for MilyFX written by Echo <echo.xjtu@gmail.com>
+# Don't define LIB, LIBPATH etc..
+#
+
+CL=cl.exe
+
+CLFLAGS= /c /I libfetion /MD /W3 /O1 /D _WIN32 /D _DEBUG /D _CONSOLE /D _CRT_SECURE_NO_WARNINGS
+
+LINK=link.exe
+
+LINKFLAGS= /SUBSYSTEM:CONSOLE /INCREMENTAL:NO /machine:I386 /OUT:MilyFX.exe /NOLOGO /LTCG
+
+VC8OBJS= utf8.obj mygetopt.obj milyfx.obj
+
+LIBFETION= lib\LibFetion.lib lib\libcurl_imp.lib wsock32.lib
+
+all: MilyFX.exe
+
+MilyFX.exe : $(VC8OBJS)
+	$(LINK) $(LINKFLAGS) $(VC8OBJS) $(LIBFETION)
+
+clean:
+	move /Y MilyFX.exe bin
+	move /Y MilyFX.exe.manifest bin
+	del *.obj *.o MilyFX.lib MilyFX.exp
+
+.c.obj::
+   $(CL) $(CLFLAGS) $< 
+
+.cpp.obj::
+   $(CL) $(CLFLAGS) $< 
