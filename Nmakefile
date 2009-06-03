@@ -5,7 +5,7 @@
 
 CL=cl.exe
 
-CLFLAGS= /c /I libfetion /MD /W3 /O1 /D _WIN32 /D _DEBUG /D _CONSOLE /D _CRT_SECURE_NO_WARNINGS
+CLFLAGS= /c /I libfetion /MD /W3 /O1 /D _WIN32 /D _DEBUG /D _CONSOLE /D _CRT_SECURE_NO_DEPRECATE
 
 LINK=link.exe
 
