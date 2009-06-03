@@ -841,12 +841,12 @@ int is_a_cmd(const char *s)
 
 int on_out_cmd(const char *input)
 {
-	while(isspace(*input))
+	while(isspace((unsigned int)*input))
 		input++;
 	if('!'==input[0])
 	{
 		++input;
-		while(isspace(*input))
+		while(isspace((unsigned int)*input))
 			input++;
 		system(input);
 		return ~0;
@@ -860,14 +860,14 @@ int parse_input(char *input, char **arg1, char **arg2, char **arg3)
 {
 	int i;
 	char *p=NULL,*brk1=NULL,*brk2=NULL;
-	while(isspace(*input))
+	while(isspace((unsigned int)*input))
 		input++;
 	if(!input[0]) 
 		return 0;
 	*arg1=input;
 	for(i=1;input[i];i++)
 	{
-		if(isspace(input[i])&&!isspace(input[i-1]))
+		if(isspace((unsigned int)input[i]) && !isspace((unsigned int)input[i-1]))
 		{
 			if(!brk1&&!brk2)
 				brk1=&input[i];
@@ -882,7 +882,7 @@ int parse_input(char *input, char **arg1, char **arg2, char **arg3)
 	{
 		*brk1='\0';
 		p=brk1+1;
-		while(isspace(*p))p++;
+		while(isspace((unsigned int)*p))p++;
 		if(!p[0]) return 1;
 		*arg2=p;
 	}
@@ -893,7 +893,7 @@ int parse_input(char *input, char **arg1, char **arg2, char **arg3)
 	{
 		*brk2='\0';
 		p=brk2+1;
-		while(isspace(*p))
+		while(isspace((unsigned int )*p))
 			p++;
 		if(!p[0])
 			return 2;
