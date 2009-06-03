@@ -107,7 +107,6 @@ const char *get_usr_type_string(int usr_type);
 int util_getch(void);
 int util_get_password(char* pwd, int len);
 void util_debug(char* info, ...);
-char *util_filter_msg(const char *msg);
 void index_release(DList *list);
 DList* index_append(DList *list,long id,const char *name);
 long index2id(long id);
@@ -130,13 +129,13 @@ void on_cmd_cd(const char *arg2);
 void on_cmd_send(const char *arg2,const char *arg3);
 void on_cmd_sms(const char *arg2,const char *arg3);
 
-void on_new_message(Sint64 id);
-void on_new_qun_message(Sint64 qun_id);
-void on_sys_message(Sint64 id);
-void show_message(Sint64 id);
+void on_new_message(long id);
+void on_new_qun_message(long qun_id);
+void on_sys_message(long id);
+void show_message(long id);
 void on_set_state_ok(int state);
 void on_sys_err_network(int err);
-void on_sys_dialog_message(int message, Fetion_MSG* fx_msg,Sint64 who);
+void on_sys_dialog_message(int message, Fetion_MSG* fx_msg,long who);
 
 //void cb_cmd_state(int message, WPARAM wParam, LPARAM lParam, void* args);
 void cb_system_msg(int message, WPARAM wParam, LPARAM lParam, void* args);
@@ -691,7 +690,7 @@ void on_cmd_sms(const char *arg2, const char *arg3)
 long index2id(long id)
 {
 	index_item_t *item = NULL;
-	unsigned int index_len = d_list_length(g_index);
+	long index_len = (long) d_list_length(g_index);
 	//id is an index
 	if(id >= 1 && id <= index_len )
 	{
@@ -861,8 +860,10 @@ int parse_input(char *input, char **arg1, char **arg2, char **arg3)
 {
 	int i;
 	char *p=NULL,*brk1=NULL,*brk2=NULL;
-	while(isspace(*input))input++;
-	if(!input[0]) return 0;
+	while(isspace(*input))
+		input++;
+	if(!input[0]) 
+		return 0;
 	*arg1=input;
 	for(i=1;input[i];i++)
 	{
@@ -999,7 +1000,7 @@ int is_online(int state)
 		return 0;
 }
 
-void on_new_message(Sint64 id)
+void on_new_message(long id)
 {
 	char *msg = NULL;
 	Fetion_MSG *fxMsg = NULL;
@@ -1020,7 +1021,7 @@ void on_new_message(Sint64 id)
 		util_debug("on_new_message()->fx_get_msg()\n");
 		return;
 	}
-	msg = util_filter_msg(fxMsg->message);
+	msg = fx_msg_no_format(fxMsg->message);
 	print_gbk("\n来自 ");
 	print_utf8("%s(%ld)", account->local_name, account->id);
 	print_gbk(" 的新消息:\n");
@@ -1032,14 +1033,14 @@ void on_new_message(Sint64 id)
 	fx_destroy_msg(fxMsg);
 }
 
-void show_message(Sint64 id)
+void show_message(long id)
 {
 	char *msg = NULL;
 	Fetion_MSG *fxMsg = NULL;
 
 	if(!(fxMsg = (Fetion_MSG*)fx_get_msg(id)))
 		return;
-	msg = util_filter_msg(fxMsg->message);
+	msg = fx_msg_no_format(fxMsg->message);
 	//print_utf8(fxMsg->message);
 	print_utf8(msg);
 	log_message(msg);
@@ -1048,7 +1049,7 @@ void show_message(Sint64 id)
 	fx_destroy_msg(fxMsg);
 }
 
-void on_new_qun_message(Sint64 qun_id)
+void on_new_qun_message(long qun_id)
 {
 	long sender=0;
 	char *msg=NULL;
@@ -1063,7 +1064,7 @@ void on_new_qun_message(Sint64 qun_id)
 	if(!(fxMsg = (Fetion_MSG*)fx_get_msg(qun_id))) 
 		return;
 	sender = fxMsg->ext_id;
-	msg = util_filter_msg(fxMsg->message);
+	msg = fx_msg_no_format(fxMsg->message);
 	if(!(fx_qun = (Fetion_Qun*)fx_get_qun_by_id(qun_id)))
 	{
 		if(msg)
@@ -1104,14 +1105,14 @@ void on_new_qun_message(Sint64 qun_id)
 	fx_destroy_msg(fxMsg);
 }
 
-void on_sys_message(Sint64 id)
+void on_sys_message(long id)
 {
 	char *msg=NULL;
 	Fetion_MSG *fxMsg=NULL;
 
 	if(!(fxMsg = (Fetion_MSG*)fx_get_msg(id)))
 		return;
-	msg = util_filter_msg(fxMsg->message);
+	msg = fx_msg_no_format(fxMsg->message);
 	print_gbk("系统消息:\n");
 	print_utf8(msg);
 	print_utf8("\n");
@@ -1141,7 +1142,7 @@ void on_sys_deregistered(void)
 	print_utf8("you have login in other pc, i will quit\n");
 }
 
-void on_sys_dialog_message(int message, Fetion_MSG *fx_msg, Sint64 who)
+void on_sys_dialog_message(int message, Fetion_MSG *fx_msg, long who)
 {
 	switch(message)
 	{
@@ -1191,7 +1192,7 @@ void cb_cmd_self(int message, WPARAM wParam, LPARAM lParam, void* args)
 
 //void cb_fx_dialog(int message, WPARAM wParam, LPARAM lParam, void* args)
 //{
-//	on_new_message((Sint64)lParam);
+//	on_new_message((long)lParam);
 //}
 
 void cb_system_msg (int message, WPARAM wParam, LPARAM lParam, void* args)
@@ -1199,13 +1200,13 @@ void cb_system_msg (int message, WPARAM wParam, LPARAM lParam, void* args)
 	switch(message)
 	{
 		case FX_NEW_MESSAGE:
-			on_new_message((Sint64)lParam);
+			on_new_message((long)lParam);
 			break;
 		case FX_NEW_QUN_MESSAGE:
-			on_new_qun_message((Sint64)lParam);
+			on_new_qun_message((long)lParam);
 			break;
 		case FX_SYS_MESSAGE:
-			on_sys_message((Sint64)lParam);
+			on_sys_message((long)lParam);
 			break;
 		case FX_SET_STATE_OK:
 			on_set_state_ok((int)wParam);
@@ -1258,7 +1259,7 @@ void cb_system_msg (int message, WPARAM wParam, LPARAM lParam, void* args)
 		case FX_QUN_SMS_FAIL:
 		case FX_QUN_SMS_FAIL_LIMIT:
 		case FX_QUN_SMS_TIMEOUT:
-			on_sys_dialog_message(message, (Fetion_MSG*)wParam, (Sint64)lParam);
+			on_sys_dialog_message(message, (Fetion_MSG*)wParam, (long)lParam);
 			break;
 		case FX_REMOVE_BLACKLIST_OK:
 			util_debug("FX_REMOVE_BLACKLIST_OK:0x%04X\n",FX_REMOVE_BLACKLIST_OK);
@@ -1441,23 +1442,6 @@ void cb_fx_relogin(int message, WPARAM wParam, LPARAM lParam, void* args)
 			break;
 	}
 
-}
-
-char *util_filter_msg(const char *msg)
-{
-	int len;
-	char *ret = NULL;
-	char *b = strchr(msg, '>');
-	char *e = strstr(msg, "</Font>");
-	if(!b || !e || b > e)
-		return NULL;
-	b += 1;
-	len = e - b;
-	if(!(ret = (char*)malloc(len + 1)))
-		return NULL;
-	strncpy(ret, b, len);
-	ret[len] = '\0';
-	return ret;
 }
 
 int util_getch(void)
