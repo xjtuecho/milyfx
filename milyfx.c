@@ -869,7 +869,7 @@ int parse_input(char *input, char **arg1, char **arg2, char **arg3)
 	{
 		if(isspace((unsigned int)input[i]) && !isspace((unsigned int)input[i-1]))
 		{
-			if(!brk1&&!brk2)
+			if(!brk1 && !brk2)
 				brk1=&input[i];
 			else if(brk1&&!brk2)
 				brk2=&input[i];
