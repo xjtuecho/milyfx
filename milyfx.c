@@ -255,7 +255,7 @@ int main_loop(void)
 			}
 			else if(strequ("state", arg1)) {
 				if(1 == args) {
-					print_gbk("µ±Ç°×´Ì¬: %s\n", 
+					print_gbk("å½“å‰çŠ¶æ€: %s\n",
 						get_state_string( fx_get_user_state() ));
 				} else if (2 == args)
 					on_cmd_state(arg2);
@@ -342,31 +342,31 @@ void helpinfo(const char *cmd)
 {
 	int i;
 	if(strequ(cmd,"ls")||strequ(cmd,"list")|| strequ(cmd,"l")) {
-		print_gbk("ls a/q/g/b: ÎŞ²ÎÊıÁĞ³öµ±Ç°ÔÚÏßºÃÓÑÁĞ±í,ÓĞ²ÎÊıÁĞ³öºÃÓÑÏêÏ¸ĞÅÏ¢.\n");
+		print_gbk("ls a/q/g/b: æ— å‚æ•°åˆ—å‡ºå½“å‰åœ¨çº¿å¥½å‹åˆ—è¡¨,æœ‰å‚æ•°åˆ—å‡ºå¥½å‹è¯¦ç»†ä¿¡æ¯.\n");
 	} else if(strequ(cmd,"quit")||strequ(cmd,"exit")) {
-		print_gbk("quit/exit/bye: ÍË³ö±¾³ÌĞò\n");
+		print_gbk("quit/exit/bye: é€€å‡ºæœ¬ç¨‹åº\n");
 	} else if(strequ(cmd,"block")) {
-		print_gbk("block: ÊÇ·ñ´ò¿ªÏûÏ¢ÆÁ±Î¹¦ÄÜ\n");
+		print_gbk("block: æ˜¯å¦æ‰“å¼€æ¶ˆæ¯å±è”½åŠŸèƒ½\n");
 	} else if(strequ(cmd,"state")) {
-		print_gbk("state [1|2|3|4]: 1-ÔÚÏß 2-ÒşÉí 3-Ã¦Âµ 4-Àë¿ª,ÎŞ²ÎÊı²ì¿´µ±Ç°×´Ì¬\n");
+		print_gbk("state [1|2|3|4]: 1-åœ¨çº¿ 2-éšèº« 3-å¿™ç¢Œ 4-ç¦»å¼€,æ— å‚æ•°å¯Ÿçœ‹å½“å‰çŠ¶æ€\n");
 	} else if(strequ(cmd,"send")|| strequ(cmd,"s")) {
-		print_gbk("send <±àºÅ|ÈººÅ> <ÏûÏ¢>: ¸øºÃÓÑ»òÕßÈº·¢ËÍÒ»¸öÏûÏ¢\n");
+		print_gbk("send <ç¼–å·|ç¾¤å·> <æ¶ˆæ¯>: ç»™å¥½å‹æˆ–è€…ç¾¤å‘é€ä¸€ä¸ªæ¶ˆæ¯\n");
 	} else if(strequ(cmd,"sms")) {
-		print_gbk("sms [±àºÅ|·ÉĞÅºÅ] <¶ÌĞÅÄÚÈİ>: ¸øºÃÓÑ·¢¶ÌĞÅ\n");
+		print_gbk("sms [ç¼–å·|é£ä¿¡å·] <çŸ­ä¿¡å†…å®¹>: ç»™å¥½å‹å‘çŸ­ä¿¡\n");
 	} else if(strequ(cmd,"cd")) {
-		print_gbk("cd <ºÃÓÑ±àºÅ>: ¿ªÊ¼ºÍÄ³ÈË¶Ô»°, ¼üÈë'cd ..'Àë¿ª.\n");
+		print_gbk("cd <å¥½å‹ç¼–å·>: å¼€å§‹å’ŒæŸäººå¯¹è¯, é”®å…¥'cd ..'ç¦»å¼€.\n");
 	} else if(strequ(cmd,"!")) {
-		print_gbk("!Íâ²¿ÃüÁî: Ö´ĞĞÒ»¸öÍâ²¿ÃüÁî\n");
+		print_gbk("!å¤–éƒ¨å‘½ä»¤: æ‰§è¡Œä¸€ä¸ªå¤–éƒ¨å‘½ä»¤\n");
 	} else if(strequ(cmd,"chcp")) {
-		print_gbk("chcp: ¸Ä±äµ±Ç°×Ö·û¼¯ (UTF8/GBK)\n");
+		print_gbk("chcp: æ”¹å˜å½“å‰å­—ç¬¦é›† (UTF8/GBK)\n");
 	} else if(strequ(cmd,"self")) {
-		print_gbk("self <¶ÌĞÅÄÚÈİ>: ¸ø×Ô¼º·¢¶ÌĞÅ\n");
+		print_gbk("self <çŸ­ä¿¡å†…å®¹>: ç»™è‡ªå·±å‘çŸ­ä¿¡\n");
 	} else if(strequ(cmd,"log")) {
-		print_gbk("log: ÊÇ·ñ±£´æÁÄÌì¼ÇÂ¼\n");
+		print_gbk("log: æ˜¯å¦ä¿å­˜èŠå¤©è®°å½•\n");
 	} else if(strequ(cmd,"impresa")) {
-		print_gbk("impresa [ĞÄÇé¶ÌÓï]: ²ì¿´/ÉèÖÃĞÄÇé¶ÌÓï\n");
+		print_gbk("impresa [å¿ƒæƒ…çŸ­è¯­]: å¯Ÿçœ‹/è®¾ç½®å¿ƒæƒ…çŸ­è¯­\n");
 	} else if(strequ(cmd,"info")) {
-		print_gbk("info <ºÃÓÑ±àºÅ>: ²ì¿´ºÃÓÑĞÅÏ¢\n");
+		print_gbk("info <å¥½å‹ç¼–å·>: å¯Ÿçœ‹å¥½å‹ä¿¡æ¯\n");
 	} else if(strequ(cmd,"help")) {
 		for(i=0; i<ARRAY_SIZE(g_cmd_array); ++i)
 		{
@@ -374,9 +374,9 @@ void helpinfo(const char *cmd)
 			if(7 == i%8)
 				printf("\n");
 		}
-		print_gbk("\nhelp [ÃüÁî]: µÃµ½Ä³¸öÃüÁîµÄ°ïÖúĞÅÏ¢.\n");
+		print_gbk("\nhelp [å‘½ä»¤]: å¾—åˆ°æŸä¸ªå‘½ä»¤çš„å¸®åŠ©ä¿¡æ¯.\n");
 	} else {
-		print_gbk("Î´ÖªÃüÁî\n");
+		print_gbk("æœªçŸ¥å‘½ä»¤\n");
 	}
 }
 
@@ -454,7 +454,7 @@ void on_cmd_ls_online(void)
 
   	account = fx_get_first_account();
 
-	print_gbk("+--------------------ÔÚÏßºÃÓÑ------------------------+\n");
+	print_gbk("+--------------------åœ¨çº¿å¥½å‹------------------------+\n");
   	while(account)
 	{
 		if(fx_is_on_line_by_account(account))
@@ -467,7 +467,7 @@ void on_cmd_ls_online(void)
 				name = account->personal->nickname;
 
 			print_utf8(" %d\t%d\t%s", ++i, account->id,	name);
-			print_gbk( "\t\t%s\t%s\n", 
+			print_gbk( "\t\t%s\t%s\n",
 				get_state_string(account->online_status),
 				get_usr_type_string(account->usr_type)
 			);
@@ -496,25 +496,25 @@ void on_cmd_ls_all(void)
 
   	account = fx_get_first_account();
 
-	print_gbk("+-------------------ËùÓĞºÃÓÑ-----------------------+\n");
+	print_gbk("+-------------------æ‰€æœ‰å¥½å‹-----------------------+\n");
   	while(account)
 	{
 		/**
-		 * ×îºóÒ»¸öaccountÊÇ×Ô¼º£¬Ìø¹ı£¬·ñÔò»áÓĞ´íÎó.
-		 * Õâ¸öbugÔÚĞÂ°æ±¾µÄLibFetionÀïÃæÒÑ¾­½â¾öÁË
+		 * æœ€åä¸€ä¸ªaccountæ˜¯è‡ªå·±ï¼Œè·³è¿‡ï¼Œå¦åˆ™ä¼šæœ‰é”™è¯¯.
+		 * è¿™ä¸ªbugåœ¨æ–°ç‰ˆæœ¬çš„LibFetioné‡Œé¢å·²ç»è§£å†³äº†
 		 */
 		//if(FTION_UTYPE_UNSET == account->usr_type)
 		//	break;
 
 		name = account->local_name;
 
-		// Èç¹ûÓÃ»§Ã»ÓĞÉèÖÃÏÔÊ¾Ãû×Ö,ÔòÏÔÊ¾ÓÃ»§µÄêÇ³Æ
-		// µ«ÊÇÏÖÔÚÅĞ¶ÏµÄÊ±ºò»¹ÓĞµãÎÊÌâ...
+		// å¦‚æœç”¨æˆ·æ²¡æœ‰è®¾ç½®æ˜¾ç¤ºåå­—,åˆ™æ˜¾ç¤ºç”¨æˆ·çš„æ˜µç§°
+		// ä½†æ˜¯ç°åœ¨åˆ¤æ–­çš„æ—¶å€™è¿˜æœ‰ç‚¹é—®é¢˜...
 		if(!name && account->personal)
 			name = account->personal->nickname;
 
 		print_utf8(" %d\t%d\t%s", ++i, account->id,	name);
-		print_gbk( "\t\t%s\t%s\n", 
+		print_gbk( "\t\t%s\t%s\n",
 			get_state_string(account->online_status),
 			get_usr_type_string(account->usr_type)
 		);
@@ -538,11 +538,11 @@ void on_cmd_ls_group(void)
 
 	iter = (DList*)fx_get_group();
 
-	print_gbk("+----------------ºÃÓÑ·Ö×é----------------+\n");
+	print_gbk("+----------------å¥½å‹åˆ†ç»„----------------+\n");
   	while(iter)
 	{
   		if(group=(Fetion_Group *)iter->data) {
-			print_gbk(" ·Ö×é:");
+			print_gbk(" åˆ†ç»„:");
 			print_utf8("%d\t%s\n",group->id,group->name);
 		}
   		iter = iter->next;
@@ -563,12 +563,12 @@ void on_cmd_ls_qun(void)
 
 	iter = (DList*)fx_get_qun();
 
-	print_gbk("+-----------------·ÉĞÅÈº-----------------+\n");
+	print_gbk("+-----------------é£ä¿¡ç¾¤-----------------+\n");
   	while(iter)
 	{
   		if(qun=(Fetion_Qun *)iter->data)
 		{
-			print_gbk(" %d\tÈº:",++i);
+			print_gbk(" %d\tç¾¤:",++i);
 			print_utf8("%d\t%s\n",qun->id,qun->quninfo?qun->quninfo->name:"");
 			g_index = index_append(g_index, qun->id, qun->quninfo?qun->quninfo->name:"");
   		}
@@ -585,7 +585,7 @@ void on_cmd_ls_black(void)
 
 	iter = (DList*)fx_get_blacklist();
 
-	print_gbk("+----------------ºÚÃûµ¥------------------+\n");
+	print_gbk("+----------------é»‘åå•------------------+\n");
   	while(iter)
 	{
   		if(black=(Fetion_Black*)iter->data)
@@ -635,13 +635,13 @@ void  on_cmd_info(const char *arg2)
 		gender = account->personal->gender;
 		impresa = account->personal->impresa;
 	}
-	// Ä¿Ç°µÄlibfetionËÆºõFetion_PersonalÀïÃæµÄºÜ¶àÌõÄ¿¶¼Ã»ÓĞÊµÏÖ,
-	// ±ÈÈç³£ÓÃµÄÊÖ»úºÅ£¬ĞÔ±ğ.ÒÑ¾­È·ÈÏÊµÏÖµÄÓĞÆÁÏÔÃû³Æ,·ÉĞÅºÅ, êÇ³Æ,ĞÄÇé¶ÌÓï
-	print_gbk("·ÉĞÅºÅ:%d\têÇ³Æ:", account->id);
+	// ç›®å‰çš„libfetionä¼¼ä¹Fetion_Personalé‡Œé¢çš„å¾ˆå¤šæ¡ç›®éƒ½æ²¡æœ‰å®ç°,
+	// æ¯”å¦‚å¸¸ç”¨çš„æ‰‹æœºå·ï¼Œæ€§åˆ«.å·²ç»ç¡®è®¤å®ç°çš„æœ‰å±æ˜¾åç§°,é£ä¿¡å·, æ˜µç§°,å¿ƒæƒ…çŸ­è¯­
+	print_gbk("é£ä¿¡å·:%d\tæ˜µç§°:", account->id);
 	print_utf8("%s\t", nickname);
-	print_gbk("ÏÔÊ¾Ãû:");
+	print_gbk("æ˜¾ç¤ºå:");
 	print_utf8("%s\n", account->local_name);
-	print_gbk("ĞÄÇé¶ÌÓï:");
+	print_gbk("å¿ƒæƒ…çŸ­è¯­:");
 	print_utf8("%s\n", impresa	);
 }
 void on_cmd_cd(const char *arg2)
@@ -682,7 +682,7 @@ void on_cmd_sms(const char *arg2, const char *arg3)
 		fx_send_sms(id, msg, NULL, NULL);
 
 	//if((id > 100000) && fs_send_sms(id, msg))
-	//	print_utf8("¸ã¶¨!\n");
+	//	print_utf8("æå®š!\n");
 	//log_message(arg2);
 	//log_message(arg3);
 }
@@ -706,25 +706,25 @@ const char *get_state_string(int state)
 	switch(state)
 	{
 		case FX_STATUS_UNSET:
-			return "Î´ÉèÖÃ";
+			return "æœªè®¾ç½®";
 		case FX_STATUS_ONLINE:
-			return "ÔÚÏß";
+			return "åœ¨çº¿";
 		case FX_STATUS_BUSY:
-			return "Ã¦Âµ";
+			return "å¿™ç¢Œ";
 		case FX_STATUS_OFFLINE:
-			return "ÀëÏß";
+			return "ç¦»çº¿";
 		case FX_STATUS_AWAY:
-			return "ÂíÉÏ»ØÀ´";
+			return "é©¬ä¸Šå›æ¥";
 		case FX_STATUS_MEETING:
-			return "»áÒéÖĞ";
+			return "ä¼šè®®ä¸­";
 		case FX_STATUS_PHONE:
-			return "µç»°ÖĞ";
+			return "ç”µè¯ä¸­";
 		case FX_STATUS_DINNER:
-			return "Íâ³öÓÃ²Í";
+			return "å¤–å‡ºç”¨é¤";
 		case FX_STATUS_EXTENDED_AWAY:
-			return "Àë¿ª";
+			return "ç¦»å¼€";
 		case FX_STATUS_NUM_PRIMITIVES:
-			return "×Ô¶¨Òå";
+			return "è‡ªå®šä¹‰";
 		default:
 			return "";
 	}
@@ -862,7 +862,7 @@ int parse_input(char *input, char **arg1, char **arg2, char **arg3)
 	char *p=NULL,*brk1=NULL,*brk2=NULL;
 	while(isspace((unsigned int)*input))
 		input++;
-	if(!input[0]) 
+	if(!input[0])
 		return 0;
 	*arg1=input;
 	for(i=1;input[i];i++)
@@ -969,7 +969,7 @@ void init_options(int argc,char **argv)
 			print_utf8("to:%s\n",g_who);
 			break;
 		case 't':
-			//ÈçºÎÍêÕûÏÔÊ¾ -t ºóÃæµÄ´ø¿Õ¸ñĞÅÏ¢ÄØ?
+			//å¦‚ä½•å®Œæ•´æ˜¾ç¤º -t åé¢çš„å¸¦ç©ºæ ¼ä¿¡æ¯å‘¢?
 			snprintf(g_text, TEXT_LEN, mfx_optarg);
 			print_utf8("text:%s\n", g_text);
 			break;
@@ -1022,9 +1022,9 @@ void on_new_message(long id)
 		return;
 	}
 	msg = fx_msg_no_format(fxMsg->message);
-	print_gbk("\nÀ´×Ô ");
+	print_gbk("\næ¥è‡ª ");
 	print_utf8("%s(%ld)", account->local_name, account->id);
-	print_gbk(" µÄĞÂÏûÏ¢:\n");
+	print_gbk(" çš„æ–°æ¶ˆæ¯:\n");
 	print_utf8(msg);
 	print_utf8("\n");
 	log_message(msg);
@@ -1061,7 +1061,7 @@ void on_new_qun_message(long qun_id)
 	Fetion_QunMember *qun_member=NULL;
 	DList *dl=NULL;
 
-	if(!(fxMsg = (Fetion_MSG*)fx_get_msg(qun_id))) 
+	if(!(fxMsg = (Fetion_MSG*)fx_get_msg(qun_id)))
 		return;
 	sender = fxMsg->ext_id;
 	msg = fx_msg_no_format(fxMsg->message);
@@ -1087,20 +1087,20 @@ void on_new_qun_message(long qun_id)
 	}
 	print_utf8(sender_name);
 	print_utf8("(%ld)",sender);
-	print_gbk("@Èº:");
+	print_gbk("@ç¾¤:");
 	print_utf8(qun_name);
 	print_utf8("(%ld)\n",qun_id);
 	print_utf8(msg);
 	print_utf8("\n");
 
 	log_message(sender_name);
-	log_message("(%ld)@Èº:",sender);
+	log_message("(%ld)@ç¾¤:",sender);
 	log_message(qun_name);
 	log_message("(%ld)\n",qun_id);
 	log_message(msg);
 	log_message("\n");
 
-	if(msg) 
+	if(msg)
 		free(msg);
 	fx_destroy_msg(fxMsg);
 }
@@ -1113,7 +1113,7 @@ void on_sys_message(long id)
 	if(!(fxMsg = (Fetion_MSG*)fx_get_msg(id)))
 		return;
 	msg = fx_msg_no_format(fxMsg->message);
-	print_gbk("ÏµÍ³ÏûÏ¢:\n");
+	print_gbk("ç³»ç»Ÿæ¶ˆæ¯:\n");
 	print_utf8(msg);
 	print_utf8("\n");
 	if(msg)
@@ -1125,7 +1125,7 @@ void on_sys_message(long id)
 
 void on_set_state_ok(int state)
 {
-	print_gbk("ÉèÖÃ×´Ì¬³É¹¦,µ±Ç°×´Ì¬: ");
+	print_gbk("è®¾ç½®çŠ¶æ€æˆåŠŸ,å½“å‰çŠ¶æ€: ");
 	print_gbk(get_state_string(state));
 	print_utf8("\n");
 }
@@ -1181,12 +1181,12 @@ void on_sys_dialog_message(int message, Fetion_MSG *fx_msg, long who)
 
 //void cb_cmd_state(int message, WPARAM wParam, LPARAM lParam, void* args)
 //{
-//	print_utf8("µ±Ç°×´Ì¬: %s\n", get_state_string( fx_get_user_state() ));
+//	print_utf8("å½“å‰çŠ¶æ€: %s\n", get_state_string( fx_get_user_state() ));
 //}
 
 void cb_cmd_self(int message, WPARAM wParam, LPARAM lParam, void* args)
 {
-	print_gbk("¸ø×Ô¼º·¢¶ÌĞÅ³É¹¦!\n");
+	print_gbk("ç»™è‡ªå·±å‘çŸ­ä¿¡æˆåŠŸ!\n");
 }
 
 
